@@ -10,6 +10,7 @@ import {
   parse,
   ExecutionResult,
 } from 'graphql';
+import { SubSchemaKind } from '../Interfaces';
 import mergeSchemas from '../stitching/mergeSchemas';
 import {
   propertySchema as localPropertySchema,
@@ -120,12 +121,36 @@ testCombinations.forEach(async combination => {
 
       mergedSchema = mergeSchemas({
         schemas: [
-          propertySchema,
-          bookingSchema,
-          scalarTest,
-          enumTest,
-          linkSchema,
-          localSubscriptionSchema,
+          {
+            kind: SubSchemaKind.Schema,
+            name: 'Property',
+            schema: propertySchema,
+          },
+          {
+            kind: SubSchemaKind.Schema,
+            name: 'Booking',
+            schema: bookingSchema,
+          },
+          {
+            kind: SubSchemaKind.ExtensionString,
+            name: 'ScalarTest',
+            typeDefs: scalarTest,
+          },
+          {
+            kind: SubSchemaKind.ExtensionString,
+            name: 'EnumTest',
+            typeDefs: enumTest,
+          },
+          {
+            kind: SubSchemaKind.ExtensionString,
+            name: 'LinkSchema',
+            typeDefs: linkSchema,
+          },
+          {
+            kind: SubSchemaKind.Schema,
+            name: 'LocalSubscription',
+            schema: localSubscriptionSchema,
+          },
         ],
         resolvers: {
           TestScalar: new GraphQLScalarType({
@@ -143,6 +168,7 @@ testCombinations.forEach(async combination => {
               fragment: 'fragment PropertyFragment on Property { id }',
               resolve(parent, args, context, info) {
                 return info.mergeInfo.delegate(
+                  'Booking',
                   'query',
                   'bookingsByPropertyId',
                   {
@@ -160,6 +186,7 @@ testCombinations.forEach(async combination => {
               fragment: 'fragment BookingFragment on Booking { propertyId }',
               resolve(parent, args, context, info) {
                 return info.mergeInfo.delegate(
+                  'Property',
                   'query',
                   'propertyById',
                   {
@@ -175,6 +202,7 @@ testCombinations.forEach(async combination => {
             property: {
               resolve(parent, args, context, info) {
                 return info.mergeInfo.delegate(
+                  'Property',
                   'query',
                   'propertyById',
                   {
@@ -192,6 +220,7 @@ testCombinations.forEach(async combination => {
             },
             delegateInterfaceTest(parent, args, context, info) {
               return info.mergeInfo.delegate(
+                'Property',
                 'query',
                 'interfaceTest',
                 {
@@ -203,6 +232,7 @@ testCombinations.forEach(async combination => {
             },
             delegateArgumentTest(parent, args, context, info) {
               return info.mergeInfo.delegate(
+                'Property',
                 'query',
                 'propertyById',
                 {
@@ -223,6 +253,7 @@ testCombinations.forEach(async combination => {
               resolve(parent, args, context, info) {
                 if (args.id.startsWith('p')) {
                   return info.mergeInfo.delegate(
+                    'Property',
                     'query',
                     'propertyById',
                     args,
@@ -231,6 +262,7 @@ testCombinations.forEach(async combination => {
                   );
                 } else if (args.id.startsWith('b')) {
                   return info.mergeInfo.delegate(
+                    'Booking',
                     'query',
                     'bookingById',
                     args,
@@ -239,6 +271,7 @@ testCombinations.forEach(async combination => {
                   );
                 } else if (args.id.startsWith('c')) {
                   return info.mergeInfo.delegate(
+                    'Booking',
                     'query',
                     'customerById',
                     args,
@@ -252,6 +285,7 @@ testCombinations.forEach(async combination => {
             },
             async nodes(parent, args, context, info) {
               const bookings = await info.mergeInfo.delegate(
+                'Booking',
                 'query',
                 'bookings',
                 {},
@@ -259,6 +293,7 @@ testCombinations.forEach(async combination => {
                 info,
               );
               const properties = await info.mergeInfo.delegate(
+                'Property',
                 'query',
                 'properties',
                 {},
