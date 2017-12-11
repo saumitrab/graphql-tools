@@ -24,12 +24,10 @@ import {
   IResolvers,
   MergeInfo,
   IFieldResolver,
-  SubSchema,
   VisitType,
   MergeTypeCandidate,
-  SubSchemaKind,
+  TypeWithResolvers,
   VisitTypeResult,
-  VisitTypeResultKind,
   ResolveType,
 } from '../Interfaces';
 // import isEmptyObject from '../isEmptyObject';
@@ -49,7 +47,7 @@ export default function mergeSchemas({
   visitType,
   resolvers,
 }: {
-  schemas: Array<SubSchema>;
+  schemas: Array<{ name: string; schema: string | GraphQLSchema }>;
   visitType?: VisitType;
   resolvers?: IResolvers | ((mergeInfo: MergeInfo) => IResolvers);
 }): GraphQLSchema {
@@ -89,8 +87,8 @@ export default function mergeSchemas({
     });
   };
 
-  schemas.forEach((subSchema: SubSchema) => {
-    if (subSchema.kind === SubSchemaKind.Schema) {
+  schemas.forEach(subSchema => {
+    if (subSchema.schema instanceof GraphQLSchema) {
       const schema = subSchema.schema;
       allSchemas[subSchema.name] = schema;
       const queryType = schema.getQueryType();
@@ -133,8 +131,8 @@ export default function mergeSchemas({
           });
         }
       });
-    } else if (subSchema.kind === SubSchemaKind.ExtensionString) {
-      let parsedSchemaDocument = parse(subSchema.typeDefs);
+    } else if (typeof subSchema.schema === 'string') {
+      let parsedSchemaDocument = parse(subSchema.schema);
       parsedSchemaDocument.definitions.forEach(def => {
         const type = typeFromAST(def, createNamedStub);
         if (type) {
@@ -151,6 +149,8 @@ export default function mergeSchemas({
       if (extensionsDocument.definitions.length > 0) {
         extensions.push(extensionsDocument);
       }
+    } else {
+      throw new Error(`Invalid schema ${subSchema.name}`);
     }
   });
 
@@ -161,8 +161,19 @@ export default function mergeSchemas({
       typeName,
       typeCandidates[typeName],
     );
-    if (resultType.kind === VisitTypeResultKind.Type) {
-      const type = resultType.type;
+    if (resultType === null) {
+      types[typeName] = null;
+    } else {
+      let type: GraphQLNamedType;
+      let typeResolvers: IResolvers;
+      if (isNamedType(<GraphQLNamedType>resultType)) {
+        type = <GraphQLNamedType>resultType;
+      } else if ((<TypeWithResolvers>resultType).type) {
+        type = (<TypeWithResolvers>resultType).type;
+        typeResolvers = (<TypeWithResolvers>resultType).resolvers;
+      } else {
+        throw new Error('Invalid `visitType` result for type "${typeName}"');
+      }
       let newType: GraphQLType;
       if (isCompositeType(type) || type instanceof GraphQLInputObjectType) {
         newType = recreateCompositeType(type, resolveType);
@@ -170,8 +181,8 @@ export default function mergeSchemas({
         newType = getNamedType(type);
       }
       types[typeName] = newType;
-      if (resultType.resolvers) {
-        generatedResolvers[typeName] = resultType.resolvers;
+      if (typeResolvers) {
+        generatedResolvers[typeName] = typeResolvers;
       }
     }
   });
@@ -412,14 +423,10 @@ const defaultVisitType: VisitType = (
       fields: fieldMapToFieldConfigMap(fields, resolveType),
     });
     return {
-      kind: VisitTypeResultKind.Type,
       type,
       resolvers,
     };
   } else {
-    return {
-      kind: VisitTypeResultKind.Type,
-      type: candidates[candidates.length - 1].type,
-    };
+    return candidates[candidates.length - 1].type;
   }
 };

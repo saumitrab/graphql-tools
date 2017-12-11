@@ -10,7 +10,6 @@ import {
   parse,
   ExecutionResult,
 } from 'graphql';
-import { SubSchemaKind } from '../Interfaces';
 import mergeSchemas from '../stitching/mergeSchemas';
 import {
   propertySchema as localPropertySchema,
@@ -122,32 +121,26 @@ testCombinations.forEach(async combination => {
       mergedSchema = mergeSchemas({
         schemas: [
           {
-            kind: SubSchemaKind.Schema,
             name: 'Property',
             schema: propertySchema,
           },
           {
-            kind: SubSchemaKind.Schema,
             name: 'Booking',
             schema: bookingSchema,
           },
           {
-            kind: SubSchemaKind.ExtensionString,
             name: 'ScalarTest',
-            typeDefs: scalarTest,
+            schema: scalarTest,
           },
           {
-            kind: SubSchemaKind.ExtensionString,
             name: 'EnumTest',
-            typeDefs: enumTest,
+            schema: enumTest,
           },
           {
-            kind: SubSchemaKind.ExtensionString,
             name: 'LinkSchema',
-            typeDefs: linkSchema,
+            schema: linkSchema,
           },
           {
-            kind: SubSchemaKind.Schema,
             name: 'LocalSubscription',
             schema: localSubscriptionSchema,
           },

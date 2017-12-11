@@ -109,43 +109,18 @@ export interface IMockServer {
   ) => Promise<ExecutionResult>;
 }
 
-export enum SubSchemaKind {
-  Schema,
-  ExtensionString,
-}
-
-export type SubSchema =
-  | {
-      kind: SubSchemaKind.Schema;
-      name: string;
-      schema: GraphQLSchema;
-    }
-  | {
-      kind: SubSchemaKind.ExtensionString;
-      name: string;
-      typeDefs: string;
-    };
-
 export type MergeTypeCandidate = {
   schemaName: string;
   schema?: GraphQLSchema;
   type: GraphQLNamedType;
 };
 
-export enum VisitTypeResultKind {
-  Type,
-  Remove,
-}
+export type TypeWithResolvers = {
+  type: GraphQLNamedType;
+  resolvers?: IResolvers;
+};
 
-export type VisitTypeResult =
-  | {
-      kind: VisitTypeResultKind.Type;
-      type: GraphQLNamedType;
-      resolvers?: IResolvers;
-    }
-  | {
-      kind: VisitTypeResultKind.Remove;
-    };
+export type VisitTypeResult = GraphQLNamedType | TypeWithResolvers | null;
 
 export type VisitType = (
   name: string,
