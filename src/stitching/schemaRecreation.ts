@@ -70,7 +70,11 @@ export function fieldMapToFieldConfigMap(
 ): GraphQLFieldConfigMap<any, any> {
   const result: GraphQLFieldConfigMap<any, any> = {};
   Object.keys(fields).forEach(name => {
-    result[name] = fieldToFieldConfig(fields[name], resolveType);
+    const field = fields[name];
+    const type = resolveType(field.type);
+    if (type !== null) {
+      result[name] = fieldToFieldConfig(fields[name], resolveType);
+    }
   });
   return result;
 }
@@ -120,7 +124,11 @@ function inputFieldMapToFieldConfigMap(
 ): GraphQLInputFieldConfigMap {
   const result: GraphQLInputFieldConfigMap = {};
   Object.keys(fields).forEach(name => {
-    result[name] = inputFieldToFieldConfig(fields[name], resolveType);
+    const field = fields[name];
+    const type = resolveType(field.type);
+    if (type !== null) {
+      result[name] = inputFieldToFieldConfig(fields[name], resolveType);
+    }
   });
   return result;
 }

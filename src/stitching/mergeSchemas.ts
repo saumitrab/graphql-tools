@@ -62,7 +62,7 @@ export default function mergeSchemas({
   }
 
   const resolveType = createResolveType(name => {
-    if (!types[name]) {
+    if (types[name] === undefined) {
       throw new Error(`Can't find type ${name}.`);
     }
     return types[name];
@@ -234,13 +234,23 @@ export default function mergeSchemas({
 }
 
 function createResolveType(
-  getType: (name: string, type: GraphQLType) => GraphQLType,
+  getType: (name: string, type: GraphQLType) => GraphQLType | null,
 ): ResolveType<any> {
   const resolveType = <T extends GraphQLType>(type: T): T => {
     if (type instanceof GraphQLList) {
-      return new GraphQLList(resolveType(type.ofType)) as T;
+      const innerType = resolveType(type.ofType);
+      if (innerType === null) {
+        return null;
+      } else {
+        return new GraphQLList(innerType) as T;
+      }
     } else if (type instanceof GraphQLNonNull) {
-      return new GraphQLNonNull(resolveType(type.ofType)) as T;
+      const innerType = resolveType(type.ofType);
+      if (innerType === null) {
+        return null;
+      } else {
+        return new GraphQLNonNull(innerType) as T;
+      }
     } else if (isNamedType(type)) {
       return getType(getNamedType(type).name, type) as T;
     } else {
